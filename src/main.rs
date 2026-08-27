@@ -1,12 +1,43 @@
-use std::{cell::RefCell, io, rc::Rc};
+use std::{cell::RefCell, fs, io, rc::Rc};
 
 use miette::{IntoDiagnostic, Report, WrapErr, miette};
 use regex::{Captures, Regex};
 use regex_try::RegexTry;
-use rust_lisp::{default_env, interpreter::eval, parser::parse};
+use rust_lisp::{
+    default_env,
+    interpreter::eval,
+    model::{RuntimeError, Symbol, Value},
+    parser::parse,
+};
 
 fn main() -> miette::Result<()> {
     let env = Rc::new(RefCell::new(default_env()));
+
+    env.borrow_mut().define(
+        Symbol::from("load"),
+        Value::NativeFunc(|env, args| {
+            let [Value::String(file)] = args.as_slice() else {
+                return Err(RuntimeError {
+                    msg: "failed to get file path".to_string(),
+                });
+            };
+
+            parse(&fs::read_to_string(file).map_err(|x| RuntimeError {
+                msg: format!("failed to read file \"{file}\": {x}"),
+            })?)
+            .map(|x| {
+                eval(
+                    env.clone(),
+                    &x.map_err(|x| RuntimeError {
+                        msg: format!("failed to parse file \"{file}\": {x}"),
+                    })?,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+            Ok(Value::NIL)
+        }),
+    );
 
     print!(
         "{}",
