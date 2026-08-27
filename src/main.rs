@@ -11,27 +11,27 @@ fn main() -> miette::Result<()> {
     print!(
         "{}",
         Regex::new(r"`([^`]*)`")
-            .expect("can't compile regex")
+            .expect("failed to compile regex")
             .try_replace_all(
                 &io::read_to_string(io::stdin())
                     .into_diagnostic()
-                    .wrap_err("can't read stdin")?,
+                    .wrap_err("failed to read stdin")?,
                 |caps: &Captures| {
                     Ok::<String, Report>(
-                        eval(
-                            env.clone(),
-                            &parse(&caps[1])
-                                .next()
-                                .wrap_err("can't find expression inside macro block")?
-                                .map_err(|x| miette!(x.msg))?,
-                        )
-                        .into_diagnostic()
-                        .wrap_err("can't execute")?
-                        .to_string(),
+                        parse(&caps[1])
+                            .map(|x| {
+                                eval(env.clone(), &x.map_err(|x| miette!(x.msg))?)
+                                    .into_diagnostic()
+                                    .wrap_err("failed to execute code")
+                            })
+                            .collect::<Result<Vec<_>, _>>()?
+                            .last()
+                            .wrap_err("failed to get expression from macro block")?
+                            .to_string(),
                     )
                 },
             )
-            .wrap_err("can't process macro code")?
+            .wrap_err("failed to process macro code")?
     );
 
     Ok(())
