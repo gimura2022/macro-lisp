@@ -88,5 +88,7 @@ pub fn env() -> Env {
     env.define(Symbol::from("sin"), Value::NativeFunc(sin));
     env.define(Symbol::from("cos"), Value::NativeFunc(cos));
 
+    env.define(Symbol::from("nilstr"), Value::String("".to_string()));
+
     env
 }
