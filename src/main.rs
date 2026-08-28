@@ -1,63 +1,20 @@
-use std::{cell::RefCell, fs, io, rc::Rc};
+use std::{cell::RefCell, io, rc::Rc};
 
 use miette::{IntoDiagnostic, Report, WrapErr, miette};
 use regex::{Captures, Regex};
 use regex_try::RegexTry;
-use rust_lisp::{
-    default_env,
-    interpreter::eval,
-    model::{Env, RuntimeError, Symbol, Value},
-    parser::parse,
-};
+use rust_lisp::{interpreter::eval, model::Value, parser::parse};
 
-fn load(env: Rc<RefCell<Env>>, args: Vec<Value>) -> Result<Value, RuntimeError> {
-    let [Value::String(file)] = args.as_slice() else {
-        return Err(RuntimeError {
-            msg: "failed to get file path".to_string(),
-        });
-    };
+use env::env;
 
-    parse(&fs::read_to_string(file).map_err(|x| RuntimeError {
-        msg: format!("failed to read file \"{file}\": {x}"),
-    })?)
-    .map(|x| {
-        eval(
-            env.clone(),
-            &x.map_err(|x| RuntimeError {
-                msg: format!("failed to parse file \"{file}\": {x}"),
-            })?,
-        )
-    })
-    .collect::<Result<Vec<_>, _>>()?;
+mod env;
 
-    Ok(Value::NIL)
-}
-
-fn stringify(_: Rc<RefCell<Env>>, args: Vec<Value>) -> Result<Value, RuntimeError> {
-    let [value] = args.as_slice() else {
-        return Err(RuntimeError {
-            msg: "failed to get value".to_string(),
-        });
-    };
-    
-    Ok(Value::String(value_to_string(value.clone())))
-}
-
-fn env() -> Env {
-    let mut env = default_env();
-
-    env.define(Symbol::from("load"), Value::NativeFunc(load));
-    env.define(Symbol::from("stringify"), Value::NativeFunc(stringify));
-
-    env
-}
-
-fn value_to_string(value: Value) -> String {
+pub fn value_to_string(value: Value) -> String {
     match value {
         Value::String(x) => x,
         Value::List(x) => x
             .into_iter()
-            .map(|x| value_to_string(x))
+            .map(value_to_string)
             .collect::<Vec<_>>()
             .join("\n"),
         x if x == Value::NIL => "".to_string(),
