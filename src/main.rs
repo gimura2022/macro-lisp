@@ -44,6 +44,11 @@ fn env() -> Env {
 fn value_to_string(value: Value) -> String {
     match value {
         Value::String(x) => x,
+        Value::List(x) => x
+            .into_iter()
+            .map(|x| value_to_string(x))
+            .collect::<Vec<_>>()
+            .join("\n"),
         x if x == Value::NIL => "".to_string(),
         _ => value.to_string(),
     }
