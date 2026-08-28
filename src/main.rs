@@ -33,10 +33,21 @@ fn load(env: Rc<RefCell<Env>>, args: Vec<Value>) -> Result<Value, RuntimeError> 
     Ok(Value::NIL)
 }
 
+fn stringify(_: Rc<RefCell<Env>>, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [value] = args.as_slice() else {
+        return Err(RuntimeError {
+            msg: "failed to get value".to_string(),
+        });
+    };
+    
+    Ok(Value::String(value_to_string(value.clone())))
+}
+
 fn env() -> Env {
     let mut env = default_env();
 
     env.define(Symbol::from("load"), Value::NativeFunc(load));
+    env.define(Symbol::from("stringify"), Value::NativeFunc(stringify));
 
     env
 }
