@@ -42,11 +42,35 @@ fn stringify(_: Rc<RefCell<Env>>, args: Vec<Value>) -> Result<Value, RuntimeErro
     Ok(Value::String(value_to_string(value.clone())))
 }
 
+fn sin(_: Rc<RefCell<Env>>, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [Value::Float(x)] = args.as_slice() else {
+        return Err(RuntimeError {
+            msg: "failed to get value".to_string(),
+        });
+    };
+
+    Ok(Value::Float(x.sin()))
+}
+
+fn cos(_: Rc<RefCell<Env>>, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    let [Value::Float(x)] = args.as_slice() else {
+        return Err(RuntimeError {
+            msg: "failed to get value".to_string(),
+        });
+    };
+
+    Ok(Value::Float(x.cos()))
+}
+
 pub fn env() -> Env {
     let mut env = default_env();
 
     env.define(Symbol::from("load"), Value::NativeFunc(load));
     env.define(Symbol::from("stringify"), Value::NativeFunc(stringify));
+
+    env.define(Symbol::from("pi"), Value::Float(std::f32::consts::PI));
+    env.define(Symbol::from("sin"), Value::NativeFunc(sin));
+    env.define(Symbol::from("cos"), Value::NativeFunc(cos));
 
     env
 }
