@@ -52,7 +52,9 @@ fn float(_: Rc<RefCell<Env>>, args: Vec<Value>) -> Result<Value, RuntimeError> {
     match value {
         Value::Int(x) => Ok(Value::Float(*x as f32)),
         Value::Float(x) => Ok(Value::Float(*x)),
-        _ => Err(RuntimeError { msg: "can't convert value to float".to_string() }),
+        _ => Err(RuntimeError {
+            msg: "can't convert value to float".to_string(),
+        }),
     }
 }
 
@@ -89,6 +91,7 @@ pub fn env() -> Env {
     env.define(Symbol::from("cos"), Value::NativeFunc(cos));
 
     env.define(Symbol::from("nilstr"), Value::String("".to_string()));
+    env.define(Symbol::from("dquotestr"), Value::String("\"".to_string()));
 
     env
 }
